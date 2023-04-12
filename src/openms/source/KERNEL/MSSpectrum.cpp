@@ -39,6 +39,7 @@
 #include <OpenMS/FORMAT/PeakTypeEstimator.h>
 #include <OpenMS/IONMOBILITY/IMDataConverter.h>
 
+#include <iomanip>  
 namespace OpenMS
 {
   MSSpectrum &MSSpectrum::select(const std::vector<Size> &indices)
@@ -340,6 +341,102 @@ namespace OpenMS
     {
       return Size(it2 - ContainerType::begin());
     }
+  }
+
+  Size MSSpectrum::findNearest_2(MSSpectrum::CoordinateType mz,const MSSpectrum& mss, Size peak_index) const
+  {
+    // no peak => no search
+    if (empty())
+    {
+      throw Exception::Precondition(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "There must be at least one peak to determine the nearest peak!");
+    }
+    MSSpectrum aspectrum = std::move(*this);
+
+    bool jumping = false;
+
+    if(jumping)
+    {
+      bool smaller = false;
+      bool biggerequal = false;
+      size_t peak_i = peak_index;
+
+      while(aspectrum[peak_i].getMZ() < mz)
+      {
+        // std::cout << "MZ: " << std::setprecision(15) << mz << "\tSmaller Change Index: " << std::setprecision(15) << aspectrum[peak_i].getMZ() << '\n';
+        peak_i += 10;
+        smaller = true;
+      }
+
+      if(!smaller)
+      {
+        while(aspectrum[peak_i].getMZ() > mz)
+        {
+          peak_i -= 10;
+          biggerequal = true;
+        }
+      }
+      
+      double nearest = aspectrum[peak_i].getMZ();
+      double diff = std::abs(aspectrum[peak_i].getMZ() - mz);
+      if(smaller)
+      {
+        std::cout << "BiggerMZ: " << aspectrum[peak_i].getMZ() << "\tMZ: " << mz << "\tMZ-10: " << aspectrum[peak_i-10].getMZ() << '\n';
+        int i{1};
+        while( std::abs(mz-aspectrum[peak_i-i].getMZ()) < diff)
+        {
+          diff = std::abs(mz-aspectrum[peak_i-i].getMZ());
+          nearest = aspectrum[peak_i-i].getMZ();
+          ++i;
+        }
+      }
+
+      if(biggerequal)
+      {
+        std::cout << "SmallerMZ: " << aspectrum[peak_i].getMZ() << "\tMZ: " << mz << "\tMZ+10: " << aspectrum[peak_i+10].getMZ() << '\n';
+        int i{1};
+        while( std::abs(nearest-mz) < diff)
+        {
+          diff = std::abs(mz-aspectrum[peak_i+i].getMZ());
+          nearest = aspectrum[peak_i+i].getMZ();
+          ++i;
+        }
+      }
+      
+      return peak_i;
+    }
+
+    bool linear = true;
+
+    if(linear)
+    {
+      double nearest2 = aspectrum[peak_index].getMZ();
+      double diff = std::abs(aspectrum[peak_index].getMZ() - mz);
+      int i{1};
+      if(aspectrum[peak_index].getMZ() < mz)
+      {
+        while(std::abs(aspectrum[peak_index+i].getMZ() - mz) < diff)
+        { 
+          std::cout << "Here Smaller: " << i << '\n';
+          diff = std::abs(aspectrum[peak_index+i].getMZ() - mz);
+          nearest2 = aspectrum[peak_index+i].getMZ();
+          ++i;
+        }
+        return peak_index + i;
+      } 
+      else if(aspectrum[peak_index].getMZ() > mz)
+      {
+        while(std::abs(aspectrum[peak_index-i].getMZ() - mz) < diff)
+        { 
+          std::cout << "Here Bigger: " << i << '\n';
+          diff = std::abs(aspectrum[peak_index-i].getMZ() - mz);
+          nearest2 = aspectrum[peak_index-i].getMZ();
+          ++i;
+        }
+        return peak_index - i;
+      }
+      return peak_index;
+    }
+    return 0;
   }
 
   Int MSSpectrum::findHighestInWindow(MSSpectrum::CoordinateType mz, MSSpectrum::CoordinateType tolerance_left,
