@@ -240,12 +240,12 @@ protected:
     mtdet.run(ms_peakmap, m_traces);
 
     // std::sort(m_traces.begin(), m_traces.end(), CmpMassTraceByMZ());
-    Size i{};
-    for(auto & m : m_traces)
-    {
-      m.setLabel("T" + String(i));
-      ++i;
-    }
+    // Size i{};
+    // for(auto & m : m_traces)
+    // {
+    //   m.setLabel("T" + String(i));
+    //   ++i;
+    // }
 
     //-------------------------------------------------------------
     // configure and run elution peak detection

@@ -284,7 +284,7 @@ namespace OpenMS
 
     Size MassTraceDetection::calc_right_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (2 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
+      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (1 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec + j].scan_idx][apices_vec[peak_index_in_apices_vec + j].peak_idx].getMZ() <= right_bound) 
       { 
@@ -296,7 +296,7 @@ namespace OpenMS
 
     Size MassTraceDetection::calc_left_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 2 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
+      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 1 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec - j].scan_idx][apices_vec[peak_index_in_apices_vec - j].peak_idx].getMZ() >= left_bound) 
       { 
@@ -632,7 +632,6 @@ namespace OpenMS
             new_trace.setQuantMethod(quant_method_);
             //new_trace.setCentroidSD(ftl_sd);
             new_trace.updateWeightedMZsd();
-            new_trace.setLabel("T" + String(trace_number));
 
 
             #pragma omp critical (add_trace)
@@ -643,7 +642,8 @@ namespace OpenMS
               double rightbound_mz = work_exp[chrom_apices[rightbound_index-1].scan_idx][chrom_apices[rightbound_index-1].peak_idx].getMZ();
               if(new_trace.getCentroidMZ() >= leftbound_mz && 
                       new_trace.getCentroidMZ() < rightbound_mz)
-              {
+              { 
+                new_trace.setLabel("T" + String(trace_number));
                 ++trace_number;
                 found_masstraces.push_back(new_trace);
                 peaks_detected += new_trace.getSize();
