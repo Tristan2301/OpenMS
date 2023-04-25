@@ -749,7 +749,7 @@ namespace OpenMS
     return (denom > 0.0) ? mixed_sum / denom : 0.0;
   }
 
-
+  
   void FeatureFindingMetabo::findLocalFeatures_(const std::vector<const MassTrace*>& candidates, const double total_intensity, std::vector<FeatureHypothesis>& output_hypotheses) const
   {
     // single Mass trace hypothesis
@@ -949,6 +949,7 @@ namespace OpenMS
 
     // sort feature candidates by their score
     std::sort(feat_hypos.begin(), feat_hypos.end(), CmpHypothesesByScore());
+    
 
 #ifdef FFM_DEBUG
     std::cout << "size of hypotheses: " << feat_hypos.size() << std::endl;
@@ -993,6 +994,7 @@ namespace OpenMS
       // Skip hypotheses that contain a mass trace that has already been used
       if (trace_coll) 
       {
+        // std::cout << "Skip hypotheses\n";
         continue;
       }
 
@@ -1009,12 +1011,14 @@ namespace OpenMS
 
       if (pass_isotope_filter == 0) // not passing filter
       {
+        // std::cout << "pass_isotope_filter\n";
         continue;
       }
 
       // filter out single traces if option is set
       if (remove_single_traces_ && feat_hypos[hypo_idx].getCharge() == 0)
       {
+        // std::cout << "remove_single_traces_\n";
         continue;
       }
 
@@ -1066,6 +1070,7 @@ namespace OpenMS
     }
     output_featmap.setUniqueId(UniqueIdGenerator::getUniqueId());
     output_featmap.sortByMZ();
+    std::cout << "End of FeatureFindingMetabo::run\n";
   } // end of FeatureFindingMetabo::run
   
 }

@@ -215,5 +215,49 @@ namespace OpenMS
     };
     fmap.erase(std::remove_if(fmap.begin(), fmap.end(), filtered), fmap.end());
   }
-
 }
+
+
+//   Size MSSpectrum::findNearest(MSSpectrum::CoordinateType mz) const
+//   {
+//     // no peak => no search
+//     if (empty())
+//     {
+//       throw Exception::Precondition(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "There must be at least one peak to determine the nearest peak!");
+//     }
+//     // search for position for inserting
+//     ConstIterator it = MZBegin(mz);
+
+//     // quadtree::Box<float> fullExp(this->getMinMZ()-1, this->getRT()-1, this->getMaxMZ()-this->getMinMZ()+2, maxRT-minRT+2);
+//     Size rt = this->getRT();
+//     Size minMZ = this->getMinMZ();
+//     Size maxMZ = this->getMaxMZ();
+//     quadtree::Box<float> fullExp(minMZ-1, rt-1,maxMZ-minMZ+2, maxRT-minRT+2);
+
+
+//     // border cases
+//     if (it == ContainerType::begin())
+//     {
+//       return 0;
+//     }
+//     if (it == ContainerType::end())
+//     {
+//       return ContainerType::size() - 1;
+//     }
+//     // the peak before or the current peak are closest
+//     ConstIterator it2 = it;
+//     --it2;
+//     if (std::fabs(it->getMZ() - mz) < std::fabs(it2->getMZ() - mz))
+//     {
+//       return Size(it - ContainerType::begin());
+//     }
+//     else
+//     {
+//       return Size(it2 - ContainerType::begin());
+//     }
+//   }
+
+
+
+
+// }

@@ -88,6 +88,15 @@ public:
     /// Detailed constructor for vector
     MassTrace(const std::vector<PeakType>& trace_peaks);
 
+    /// Detailed constructor for vector
+    template <typename InputIterator>
+    MassTrace(InputIterator begin, InputIterator end) : 
+              trace_peaks_(std::make_move_iterator(begin), std::make_move_iterator(end)),
+              label_(),
+              smoothed_intensities_()
+    {
+    }
+
     /// Destructor
     ~MassTrace() = default;
 

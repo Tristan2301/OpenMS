@@ -71,6 +71,12 @@ namespace OpenMS
     {
     }
 
+    // template <typename InputIterator>
+    // MassTrace(InputIterator begin, InputIterator end) : pea
+    // {
+
+    // }
+
     PeakType& MassTrace::operator[](const Size& mt_idx)
     {
       return trace_peaks_[mt_idx];

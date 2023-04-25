@@ -239,6 +239,14 @@ protected:
 
     mtdet.run(ms_peakmap, m_traces);
 
+    // std::sort(m_traces.begin(), m_traces.end(), CmpMassTraceByMZ());
+    Size i{};
+    for(auto & m : m_traces)
+    {
+      m.setLabel("T" + String(i));
+      ++i;
+    }
+
     //-------------------------------------------------------------
     // configure and run elution peak detection
     //-------------------------------------------------------------
@@ -277,7 +285,6 @@ protected:
         ffm_param.setValue("use_smoothed_intensities", "false");
       }
     }
-
     //-------------------------------------------------------------
     // configure and run feature finding
     //-------------------------------------------------------------
@@ -301,7 +308,6 @@ protected:
           "MetaValue 'num_of_masstraces' missing from FFMetabo output!");
       trace_count += (Size) feat_map[i].getMetaValue(Constants::UserParam::NUM_OF_MASSTRACES);
     }
-
     if (trace_count != m_traces_final.size())
     {
       if (!ffm_param.getValue("remove_single_traces").toBool())

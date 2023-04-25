@@ -343,7 +343,7 @@ namespace OpenMS
     }
   }
 
-  Size MSSpectrum::findNearest_2(MSSpectrum::CoordinateType mz,const MSSpectrum& mss, Size peak_index) const
+  Size MSSpectrum::findNearest_2(MSSpectrum::CoordinateType mz, Size peak_index) const
   {
     // no peak => no search
     if (empty())
@@ -407,34 +407,46 @@ namespace OpenMS
 
     bool linear = true;
 
+    // if(linear)
+    // {
+    //   double nearest2 = aspectrum[peak_index].getMZ();
+    //   double diff = std::abs(aspectrum[peak_index].getMZ() - mz);
+    //   int i{1};
+    //   if(aspectrum[peak_index].getMZ() < mz)
+    //   {
+    //     while(std::abs(aspectrum[peak_index+i].getMZ() - mz) < diff)
+    //     { 
+    //       diff = std::abs(aspectrum[peak_index+i].getMZ() - mz);
+    //       ++i;
+    //     }
+    //     return peak_index + i -1;
+    //   } 
+    //   else if(aspectrum[peak_index].getMZ() > mz)
+    //   {
+    //     while(std::abs(aspectrum[peak_index-i].getMZ() - mz) < diff)
+    //     { 
+    //       diff = std::abs(aspectrum[peak_index-i].getMZ() - mz);
+    //       ++i;
+    //     }
+    //     return peak_index - i +1;
+    //   }
+    //   return peak_index;
+    // }
+    // return 0;
+
+    // works
     if(linear)
     {
-      double nearest2 = aspectrum[peak_index].getMZ();
-      double diff = std::abs(aspectrum[peak_index].getMZ() - mz);
+      double diff = std::abs(aspectrum[0].getMZ() - mz);
       int i{1};
-      if(aspectrum[peak_index].getMZ() < mz)
-      {
-        while(std::abs(aspectrum[peak_index+i].getMZ() - mz) < diff)
-        { 
-          std::cout << "Here Smaller: " << i << '\n';
-          diff = std::abs(aspectrum[peak_index+i].getMZ() - mz);
-          nearest2 = aspectrum[peak_index+i].getMZ();
-          ++i;
-        }
-        return peak_index + i;
-      } 
-      else if(aspectrum[peak_index].getMZ() > mz)
-      {
-        while(std::abs(aspectrum[peak_index-i].getMZ() - mz) < diff)
-        { 
-          std::cout << "Here Bigger: " << i << '\n';
-          diff = std::abs(aspectrum[peak_index-i].getMZ() - mz);
-          nearest2 = aspectrum[peak_index-i].getMZ();
-          ++i;
-        }
-        return peak_index - i;
+      while(std::abs(mz - aspectrum[i].getMZ()) < diff)
+      { 
+        // std::cout << "Here Smaller: " << i << '\n';
+        diff = std::abs(mz - aspectrum[i].getMZ());
+        // std::cout << "Diff: " << diff << '\n';
+        ++i;
       }
-      return peak_index;
+      return i-1;
     }
     return 0;
   }

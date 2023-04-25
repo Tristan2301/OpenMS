@@ -378,6 +378,8 @@ public:
     */
     Size findNearest(CoordinateType mz) const;
 
+    Size findNearest_2(MSSpectrum::CoordinateType mz, Size peak_index) const;
+
     /**
       @brief Binary search for the peak nearest to a specific m/z given a +/- tolerance windows in Th
 
