@@ -287,7 +287,7 @@ namespace OpenMS
 
     Size MassTraceDetection::calc_right_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (3 * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
+      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (3 /* border gerade 3 mal so groß wie "noetig" */ * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec + j].scan_idx][apices_vec[peak_index_in_apices_vec + j].peak_idx].getMZ() <= right_bound) 
       { 
@@ -299,7 +299,7 @@ namespace OpenMS
 
     Size MassTraceDetection::calc_left_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 3 * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
+      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 3 /* border gerade 3 mal so groß wie "noetig" */ * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec - j].scan_idx][apices_vec[peak_index_in_apices_vec - j].peak_idx].getMZ() >= left_bound) 
       { 
@@ -347,8 +347,8 @@ namespace OpenMS
       Size peaks_detected(0);
 
 
-      Size binnumber{1};
-      // Size binnumber = omp_get_max_threads();
+      // Size binnumber{1};
+      Size binnumber = omp_get_max_threads();
 
       Size binsize = chrom_apices.size()/binnumber;
       Size bin_tmp_start{0};
@@ -393,7 +393,7 @@ namespace OpenMS
       // }
 
 
-      #pragma omp parallel for num_threads(20)
+      #pragma omp parallel for num_threads(binnumber)
       for (Size i = 0; i < binnumber; ++i)
       {
         boost::dynamic_bitset<> peak_visited_1(total_peak_count); 
