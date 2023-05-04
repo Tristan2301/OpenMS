@@ -200,7 +200,6 @@ PeakMap::ConstAreaIterator mt_end = input.areaEndConst();
 
 START_SECTION((void run(PeakMap::ConstAreaIterator &begin, PeakMap::ConstAreaIterator &end, std::vector< MassTrace > &found_masstraces)))
 {
-
     NOT_TESTABLE
 //    test_mtd.run(mt_it1, mt_end, found_mtraces);
 //    TEST_EQUAL(found_mtraces.size(), 1);

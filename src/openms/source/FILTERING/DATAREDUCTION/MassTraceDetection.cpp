@@ -43,6 +43,8 @@
 #include <ctime>
 #include <chrono>
 
+#include <OpenMS/MATH/MISC/MathFunctions.h>
+
 namespace OpenMS
 {
     MassTraceDetection::MassTraceDetection() :
@@ -257,7 +259,7 @@ namespace OpenMS
       // discard last spectrum's offset
       spec_offsets.pop_back();
 
-
+      //hatten wir mal parallelisiert
       std::sort(chrom_apices.begin(), chrom_apices.end(),
                 [&work_exp](const Apex & a,
                     const Apex & b) -> bool
@@ -277,14 +279,15 @@ namespace OpenMS
     double MassTraceDetection::find_offset_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
       double centroid_mz = input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ(); //create function
-      double ftl_sd((centroid_mz / 1e6) * mass_error_ppm_);                                          // mit formel ergänzen header ppm to dalton
+      // double ftl_sd((centroid_mz / 1e6) * mass_error_ppm_);                      
+      double ftl_sd = Math::ppmToMass(mass_error_ppm_,centroid_mz);  // mit formel ergänzen header ppm to dalton
       double offset = 3 * ftl_sd;
       return offset;
     }
 
     Size MassTraceDetection::calc_right_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (1 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
+      double right_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) + (3 * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec + j].scan_idx][apices_vec[peak_index_in_apices_vec + j].peak_idx].getMZ() <= right_bound) 
       { 
@@ -296,7 +299,7 @@ namespace OpenMS
 
     Size MassTraceDetection::calc_left_border_(Size peak_index_in_apices_vec, double mass_error_ppm_, const PeakMap& input_exp, const std::vector<Apex>& apices_vec)
     {
-      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 1 * find_offset_(peak_index_in_apices_vec-1, mass_error_ppm_, input_exp, apices_vec));
+      double left_bound = (input_exp[apices_vec[peak_index_in_apices_vec].scan_idx][apices_vec[peak_index_in_apices_vec].peak_idx].getMZ()) -( 3 * find_offset_(peak_index_in_apices_vec, mass_error_ppm_, input_exp, apices_vec));
       Size j{};
       while (input_exp[apices_vec[peak_index_in_apices_vec - j].scan_idx][apices_vec[peak_index_in_apices_vec - j].peak_idx].getMZ() >= left_bound) 
       { 
@@ -314,7 +317,7 @@ namespace OpenMS
                                   std::vector<MassTrace>& found_masstraces,
                                   const Size max_traces)
     {
-      boost::dynamic_bitset<> peak_visited(total_peak_count);
+      // boost::dynamic_bitset<> peak_visited_1(total_peak_count);
       Size trace_number(1);
 
       // check presence of FWHM meta data
@@ -344,51 +347,77 @@ namespace OpenMS
       Size peaks_detected(0);
 
 
-      // Size binnumber{50};
-      Size binnumber = omp_get_max_threads();
+      Size binnumber{1};
+      // Size binnumber = omp_get_max_threads();
 
       Size binsize = chrom_apices.size()/binnumber;
       Size bin_tmp_start{0};
       std::vector<Size> binstarts;
       std::vector<Size> binends;
+      std::vector<Size> cutoff_mz;
 
       if(binnumber > 1)
       {
         binstarts.push_back(0);
+        cutoff_mz.push_back(0);
         bin_tmp_start += binsize;
         binends.push_back(calc_right_border_(bin_tmp_start-1, mass_error_ppm_, work_exp, chrom_apices));
+        cutoff_mz.push_back(bin_tmp_start-1);
 
         for(Size i = 1; i < binnumber - 1; ++i)
         {
-
+          
           binstarts.push_back(calc_left_border_(bin_tmp_start-1, mass_error_ppm_, work_exp, chrom_apices));
           bin_tmp_start += binsize;
+          cutoff_mz.push_back(bin_tmp_start-1);
+          // std::cout << "Index: " << bin_tmp_start << '\n';
           binends.push_back(calc_right_border_(bin_tmp_start-1, mass_error_ppm_, work_exp, chrom_apices));
 
         }
 
         binstarts.push_back(calc_left_border_(bin_tmp_start-1, mass_error_ppm_, work_exp, chrom_apices));
         binends.push_back(chrom_apices.size());
+        cutoff_mz.push_back(chrom_apices.size()-1);
       } 
       else
       {
         binstarts.push_back(0);
         binends.push_back(chrom_apices.size());
+        cutoff_mz.push_back(0);
+        cutoff_mz.push_back(chrom_apices.size()-1);
       }
 
+      // for(int i=0; i < binstarts.size(); ++i)
+      // {
+      //   std::cout << "Start: " << binstarts[i] << "  End: " << binends[i] << '\n';
+      // }
 
-      #pragma omp parallel for num_threads(binnumber)
+
+      #pragma omp parallel for num_threads(20)
       for (Size i = 0; i < binnumber; ++i)
       {
-        boost::dynamic_bitset<> peak_visited_1(total_peak_count); // not sure about that
+        boost::dynamic_bitset<> peak_visited_1(total_peak_count); 
         std::vector<Apex> chrom_apices_2 = {chrom_apices.cbegin() + binstarts[i], chrom_apices.cbegin() + binends[i]}; // copies because of bin overlap
         std::sort(chrom_apices_2.begin(), chrom_apices_2.end(),   // sort by intensity 
         [](const Apex & a, const Apex & b) -> bool
                    {
-                     return a.intensity < b.intensity;
+                     return a.intensity > b.intensity;
                    });
-        for (auto m_it = chrom_apices_2.crbegin(); m_it != chrom_apices_2.crend(); ++m_it) // iterate reverse from high intensity to low intensity
+        for (auto m_it = chrom_apices_2.cbegin(); m_it != chrom_apices_2.cend(); ++m_it) // iterate reverse from high intensity to low intensity
         {
+          // bool outer_loop = false;
+
+          // auto endpeak = chrom_apices.cbegin() + binends[i] - 1;
+          // Size end_scan_idx(endpeak->scan_idx);
+          // Size end_peak_idx(endpeak->peak_idx);
+          // double end_peak_mz = work_exp[end_scan_idx][end_peak_idx].getMZ();
+
+          // auto firstpeak = chrom_apices.cbegin() + binstarts[i];
+          // Size first_scan_idx(firstpeak->scan_idx);
+          // Size first_peak_idx(firstpeak->peak_idx);
+          // double first_peak_mz = work_exp[first_scan_idx][first_peak_idx].getMZ();
+
+
 
           Size apex_scan_idx(m_it->scan_idx);
           Size apex_peak_idx(m_it->peak_idx);
@@ -407,6 +436,7 @@ namespace OpenMS
           Size trace_down_idx(apex_scan_idx);
 
           std::list<PeakType> current_trace;
+          double startint = work_exp[apex_scan_idx][apex_peak_idx].getIntensity();
           current_trace.push_back(apex_peak);
           std::vector<double> fwhms_mz; // peak-FWHM meta values of collected peaks
 
@@ -439,7 +469,8 @@ namespace OpenMS
           // double outlier_ratio(0.3);
 
           // double ftl_mean(centroid_mz);
-          double ftl_sd((centroid_mz / 1e6) * mass_error_ppm_);
+          // double ftl_sd((centroid_mz / 1e6) * mass_error_ppm_);
+          double ftl_sd(Math::ppmToMass(mass_error_ppm_, centroid_mz));
           double intensity_so_far(apex_peak.getIntensity());
 
           while (((trace_down_idx > 0) && toggle_down) ||
@@ -457,7 +488,6 @@ namespace OpenMS
                 Size next_down_peak_idx = spec_trace_down.findNearest(centroid_mz);
                 double next_down_peak_mz = spec_trace_down[next_down_peak_idx].getMZ();
                 double next_down_peak_int = spec_trace_down[next_down_peak_idx].getIntensity();
-
                 double right_bound = centroid_mz + 3 * ftl_sd;
                 double left_bound = centroid_mz - 3 * ftl_sd;
 
@@ -466,6 +496,11 @@ namespace OpenMS
                     !peak_visited_1[spec_offsets[trace_down_idx - 1] + next_down_peak_idx]
                         )
                 {
+                  if(next_down_peak_int > startint)
+                  {
+                    std::cout << "Down Bigger than start\n";
+                  }
+
                   Peak2D next_peak;
                   next_peak.setRT(spec_trace_down.getRT());
                   next_peak.setMZ(next_down_peak_mz);
@@ -543,6 +578,10 @@ namespace OpenMS
                     (next_up_peak_mz >= left_bound) &&
                     !peak_visited_1[spec_offsets[trace_up_idx + 1] + next_up_peak_idx])
                 {
+                  if(next_up_peak_int > startint)
+                  {
+                    std::cout << "Up Bigger than start\n";
+                  }
                   Peak2D next_peak;
                   next_peak.setRT(spec_trace_up.getRT());
                   next_peak.setMZ(next_up_peak_mz);
@@ -600,7 +639,7 @@ namespace OpenMS
             }
           }
 
-          // std::cout << "current sr: " << current_sample_rate << std::endl;
+          // if(outer_loop) continue;
           double num_scans(down_scan_counter + up_scan_counter + 1 - conseq_missed_peak_down - conseq_missed_peak_up);
 
           double mt_quality((double)current_trace.size() / (double)num_scans);
@@ -636,10 +675,12 @@ namespace OpenMS
 
             #pragma omp critical (add_trace)
             { 
-              Size leftbound_index = binsize * i;
-              Size rightbound_index = binsize * (i+1);
+              // Size leftbound_index = binsize * i;
+              // Size rightbound_index = binsize * (i+1);
+              Size leftbound_index = cutoff_mz[i];
+              Size rightbound_index = cutoff_mz[i+1];
               double leftbound_mz = work_exp[chrom_apices[leftbound_index].scan_idx][chrom_apices[leftbound_index].peak_idx].getMZ();
-              double rightbound_mz = work_exp[chrom_apices[rightbound_index-1].scan_idx][chrom_apices[rightbound_index-1].peak_idx].getMZ();
+              double rightbound_mz = work_exp[chrom_apices[rightbound_index].scan_idx][chrom_apices[rightbound_index].peak_idx].getMZ();
               if(new_trace.getCentroidMZ() >= leftbound_mz && 
                       new_trace.getCentroidMZ() < rightbound_mz)
               { 
