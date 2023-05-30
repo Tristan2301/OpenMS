@@ -31,3 +31,4 @@ cmake-*-build
 *.code-workspace
 .vs
 .clion.*
+src/openms/source/FILTERING/DATAREDUCTION/MassTraceDetection.cpp
